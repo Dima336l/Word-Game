@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class ApplicationRunner {
+    static final int WORD_LENGTH = 3;
 
     public static ArrayList<String> readFile() {
         String dataFile = System.getProperty("user.dir") + File.separator + "datafile.txt";
@@ -56,22 +57,18 @@ public class ApplicationRunner {
 
     public static boolean isValid(String word) {
         boolean isValid = true;
-        if (word.length() != 3) {
+        if (word.length() != WORD_LENGTH) {
+            System.out.print("The word must be exactly 3 letters, please try again: ");
             isValid = false;
         } else {
             for (int i = 0; i < word.length(); i++) {
                 int ascii = (int) word.charAt(i);
-                if (word.length() == 3) {
-//                  Check if is everything other than lowercase
-                    if (ascii < 97 || ascii > 122) {
+                    if (ascii < 97 || ascii > 122) { // Check if input is lowercase
                         isValid = false;
+                        System.out.print("The word must be lowercase, please try again: ");
                         break;
                     }
-                } else {
-                    isValid = false;
-                }
             }
-
         }
         return isValid;
     }
@@ -79,7 +76,7 @@ public class ApplicationRunner {
 //  Convert chars to their corresponding encoding
     public static int[] arrayOfDigits(String word) {
         ArrayList<Integer> numbers = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < WORD_LENGTH; i++) {
             int ascii = (int) word.charAt(i) - 97 + 1;
             numbers.add(ascii);
         }
@@ -89,7 +86,7 @@ public class ApplicationRunner {
         }
         return result;
     }
-
+    
     static void firstPrompt() {
         System.out.println("Let's play ...");
         System.out.println("Player 1 to choose the first word ...");
@@ -102,7 +99,8 @@ public class ApplicationRunner {
     }
 
     static void printLines() {
-        for (int i = 0; i < 70; i++) {
+        final int NUM_OF_LINES = 70;
+        for (int i = 0; i < NUM_OF_LINES; i++) {
             System.out.print("-");
         }
         System.out.println("");
@@ -127,24 +125,20 @@ public class ApplicationRunner {
         boolean existInList = existsInList(input, arr);
         boolean itsValid = isValid(input);
         handleExit(input);
-
         if (itsValid) {
             if (existInList) {
                 isValid = true;
-
             } else {
                 System.out.println("The word is not in the list");
             }
-        } else {
-            System.out.println("The input is invalid");
         }
         return isValid;
     }
 
     public static int sumOfDigits(String input) {
         int sum;
-        int[] nr = arrayOfDigits(input);
-        sum = nr[0] + nr[1] + nr[2];
+        int[] charValues = arrayOfDigits(input);
+        sum = charValues[0] + charValues[1] + charValues[2];
         return sum;
     }
 
@@ -153,7 +147,6 @@ public class ApplicationRunner {
         boolean keepGoing;
         String input;
         int sum = 0;
-
         do {
             input = handleScanner();
             keepGoing = validateInput(input, arr);
@@ -163,7 +156,6 @@ public class ApplicationRunner {
             if (sum > 20) {
                 System.out.println("The sum is greater than 20, please try again.");
             }
-
         } while (!(keepGoing && sum < 20));
         return input;
     }
@@ -174,9 +166,9 @@ public class ApplicationRunner {
     }
 
     public static void printRow(String input, int runningTotal) {
-        int[] nr = arrayOfDigits(input);
+        int[] charValues = arrayOfDigits(input);
         int sum = sumOfDigits(input);
-        System.out.printf("| %-20s | %20s | %20s |%n", "(" + nr[0] + " + " + nr[1] + " + " + nr[2] + ")", sum, runningTotal);
+        System.out.printf("| %-20s | %20s | %20s |%n",input + " (" + charValues[0] + " + " + charValues[1] + " + " + charValues[2] + ")", sum, runningTotal);
         printLines();
     }
 
@@ -190,7 +182,7 @@ public class ApplicationRunner {
         return arr;
     }
 
-    public static String getInput(ArrayList<String> guessed, ArrayList<String> arr, int runningTotal) {
+    public static String getInput(ArrayList<String> guessed, ArrayList<String> arr) {
         char lastWord = getFirstLetter(guessed);
         boolean isValid;
         boolean startsWith;
@@ -227,26 +219,25 @@ public class ApplicationRunner {
 
 //  Deciding the game winner, if player 1 was last to enter input, boolean value winner is false and player 1 loses.
     static void displayWinner(int winner) {
-        int playerLoser, playerWinner;
-        if (winner == 1) {
-            playerLoser = 1;
-            playerWinner = 2;
-        } else {
-            playerLoser = 2;
-            playerWinner = 1;
-        }
-        System.out.println("That word takes the total to 200+ ... Player " + playerWinner + " loses.");
+        int playerLoser = (winner == 1) ? 2 : 1;
+        System.out.println("That word takes the total to 200+ ... Player " + winner + " loses.");
         System.out.println("Player " + playerLoser + " wins that game.");
 
     }
 
-    public static String firstRound(ArrayList<String> arr) {
+    public static String playFirstRound(ArrayList<String> arr, ArrayList<String> guessed) {
+        int runningTotal = 0;
         firstPrompt();
         String input = getFirstInput(arr);
+        updateArrays(guessed, arr, input);
+        runningTotal += sumOfDigits(input);
+        displayTable(guessed, 0, runningTotal);
         return input;
     }
 
-    public static void displayTable(ArrayList<String> guessed, int sum, int runningTotalTemp, int runningTotal) {
+    public static void displayTable(ArrayList<String> guessed, int sum, int runningTotal) {
+        displayHeader();
+        int runningTotalTemp = 0;
         for (int i = 0; i < guessed.size(); i++) {
             sum = sumOfDigits(guessed.get(i));
             runningTotalTemp += sum;
@@ -271,30 +262,22 @@ public class ApplicationRunner {
         String input;
         final int THRESHOLD = 200;
         int runningTotal = 0;
-        int runningTotalTemp = 0;
         int playerNum = 1;
-        int num = 0;
         int sum = 0;
-        input = firstRound(arr);
-        do {
-            displayHeader();
-            updateArrays(guessed,arr,input);
-            char chr = getFirstLetter(guessed);
+        playFirstRound(arr,guessed); // Since first round is played differently, call it outside the loop
+        while (runningTotal < THRESHOLD) {
             playerNum = alternatePlayers(playerNum);
+            char chr = getFirstLetter(guessed);
+            displayPrompt(playerNum, chr);
+            input = getInput(guessed, arr);
+            updateArrays(guessed, arr, input);
             runningTotal += sumOfDigits(input);
-            displayTable(guessed, sum, runningTotalTemp, runningTotal);
-            if (runningTotal < THRESHOLD) {
-                displayPrompt(playerNum, chr);
-                input = getInput(guessed, arr, runningTotal);
-            }
-            runningTotalTemp = 0; // Reseting running total for next round
-
-        } while (runningTotal < THRESHOLD);
+            displayTable(guessed, sum, runningTotal);
+        }
         return playerNum;
     }
 
     public static void main(String[] args) {
-
         int winner = playGame();
         displayWinner(winner);
 
