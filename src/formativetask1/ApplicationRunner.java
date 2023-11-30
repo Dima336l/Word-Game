@@ -56,7 +56,6 @@ public class ApplicationRunner {
 
     public static boolean isValid(String word) {
         boolean isValid = true;
-
         if (word.length() != 3) {
             isValid = false;
         } else {
@@ -102,10 +101,17 @@ public class ApplicationRunner {
         System.out.print("Guess a 3-lettered word (lower case) starting with letter " + chr + " or enter * to give up ");
     }
 
+    static void printLines() {
+        for (int i = 0; i < 70; i++) {
+            System.out.print("-");
+        }
+        System.out.println("");
+    }
+
     static void displayHeader() {
-        System.out.println("\n--------------------------------------------------------------------------------");
-        System.out.println("| word\t\t\t|\t\tword total |\t\t running total |\t\t");
-        System.out.println("--------------------------------------------------------------------------------");
+        printLines();
+        System.out.printf("| %-20s | %20s | %20s |%n", "word", "word total", "running total");
+        printLines();
     }
 
     static void handleExit(String input) {
@@ -134,6 +140,7 @@ public class ApplicationRunner {
         }
         return isValid;
     }
+
     public static int sumOfDigits(String input) {
         int sum;
         int[] nr = arrayOfDigits(input);
@@ -169,12 +176,8 @@ public class ApplicationRunner {
     public static void printRow(String input, int runningTotal) {
         int[] nr = arrayOfDigits(input);
         int sum = sumOfDigits(input);
-        if (runningTotal < 100) {
-            System.out.println("| " + input + " (" + nr[0] + " + " + nr[1] + " + " + nr[2] + ")\t|\t\t\t " + sum + "|" + "\t\t\t    " + runningTotal + " |");
-        } else {
-            System.out.println("| " + input + " (" + nr[0] + " + " + nr[1] + " + " + nr[2] + ")\t|\t\t\t " + sum + "|" + "\t\t\t    " + runningTotal + "|");
-        }
-        System.out.println("--------------------------------------------------------------------------------");
+        System.out.printf("| %-20s | %20s | %20s |%n", "(" + nr[0] + " + " + nr[1] + " + " + nr[2] + ")", sum, runningTotal);
+        printLines();
     }
 
     public static ArrayList<String> updateGuessedList(ArrayList<String> guessed, String input) {
@@ -223,14 +226,14 @@ public class ApplicationRunner {
     }
 
 //  Deciding the game winner, if player 1 was last to enter input, boolean value winner is false and player 1 loses.
-    static void displayWinner(boolean winner) {
+    static void displayWinner(int winner) {
         int playerLoser, playerWinner;
-        if (winner) {
-            playerLoser = 2;
-            playerWinner = 1;
-        } else {
+        if (winner == 1) {
             playerLoser = 1;
             playerWinner = 2;
+        } else {
+            playerLoser = 2;
+            playerWinner = 1;
         }
         System.out.println("That word takes the total to 200+ ... Player " + playerWinner + " loses.");
         System.out.println("Player " + playerLoser + " wins that game.");
@@ -253,50 +256,46 @@ public class ApplicationRunner {
         }
     }
 
-    public static boolean playGame() {
-//     Initialize arr to store all the words
-        ArrayList<String> arr = readFile();
-//      Initialize guessed to store guessed words
-        ArrayList<String> guessed = new ArrayList<>();
+    public static void updateArrays(ArrayList<String> guessed, ArrayList<String> arr, String input) {
+        updateGuessedList(guessed, input);
+        removeWordFromList(arr, input);
+    }
+
+    public static int alternatePlayers(int playerNum) {
+        return (playerNum == 2) ? 1 : 2;
+    }
+
+    public static int playGame() {
+        ArrayList<String> arr = readFile(); //     Initialize array to store all the words
+        ArrayList<String> guessed = new ArrayList<>();  //      Initialize array to store guessed words
         String input;
+        final int THRESHOLD = 200;
         int runningTotal = 0;
         int runningTotalTemp = 0;
-        boolean playerNum = false;
+        int playerNum = 1;
         int num = 0;
         int sum = 0;
         input = firstRound(arr);
         do {
             displayHeader();
-            updateGuessedList(guessed, input);
-            ArrayList<String> array = removeWordFromList(arr, input);
+            updateArrays(guessed,arr,input);
             char chr = getFirstLetter(guessed);
-//          Alternating players, assigning 1 or 2 to corresponding truth value
-            if (playerNum) {
-                num = 1;
-                playerNum = false;
-
-            } else {
-                num = 2;
-                playerNum = true;
-
-            }
+            playerNum = alternatePlayers(playerNum);
             runningTotal += sumOfDigits(input);
             displayTable(guessed, sum, runningTotalTemp, runningTotal);
-
-            if (runningTotal < 200) {
-                displayPrompt(num, chr);
-                input = getInput(guessed, array, runningTotal);
-
+            if (runningTotal < THRESHOLD) {
+                displayPrompt(playerNum, chr);
+                input = getInput(guessed, arr, runningTotal);
             }
-            runningTotalTemp = 0;
+            runningTotalTemp = 0; // Reseting running total for next round
 
-        } while (runningTotal < 200);
+        } while (runningTotal < THRESHOLD);
         return playerNum;
     }
 
     public static void main(String[] args) {
 
-        boolean winner = playGame();
+        int winner = playGame();
         displayWinner(winner);
 
     }
